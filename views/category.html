@@ -1,0 +1,15 @@
+	
+
+
+	<dl class="category">
+		<dt ng-show="loaded">本周推荐</dt>
+		<li ng-repeat="column in columns">
+			<div class="icon">
+				<img ng-src="{{column.icon}}" alt="">
+			</div>
+			<div class="column">
+				<h5>{{column.name}}</h5>
+				<p>{{column.description}}</p>
+			</div>
+		</li>
+    </dl>
