@@ -1,92 +1,94 @@
 
-// 引入本地安装的gulp
-var gulp = require('gulp');
+var gulp = require('gulp'),
+	
+	less = require('gulp-less'),
 
-var less = require('gulp-less');
+	cssmin = require('gulp-cssmin'),
 
-var cssmin = require('gulp-cssmin');
+	autoprefixer = require('gulp-autoprefixer'),
 
-var imagemin = require('gulp-imagemin');
+	rev = require('gulp-rev'),
 
-var uglify = require('gulp-uglify');
+	imagemin = require('gulp-imagemin'),
 
-var concat = require('gulp-concat');
+	useref = require('gulp-useref'),
 
-var htmlmin = require('gulp-htmlmin');
+	gulpif = require('gulp-if'),
 
-var autoprefix = require('gulp-autoprefixer');
+	uglify = require('gulp-uglify'),
 
-var rev = require('gulp-rev');
+	rename = require('gulp-rename'),
 
-var revCollector = require('gulp-rev-collector');
+	revCollector = require('gulp-rev-collector');
 
-var useref = require('gulp-useref');
+// gulp 对象，提供了若干方法
 
-var gulpif = require('gulp-if');
-
-// 返回值gulp是一个对象，借助此对象可以实现任务清单订制
-// 通过一系列方法实现
-
-// 定义任务(将less转成css)
-gulp.task('less', function () {
-
-	// 借助gulp.src来指定less文件位置
-	gulp.src('./public/less/*.less')
-		// 借助于gulp插件实现less 转 css 的操作
+// 处理css
+gulp.task('css', function () {
+//解决异步的问题
+	return gulp.src('./public/less/main.less')
 		.pipe(less())
 		.pipe(cssmin())
-		.pipe(autoprefix())
+		.pipe(autoprefixer())
 		.pipe(rev())
-		// 通过gulp.dest进行存储
-		.pipe(gulp.dest('./release/public'))
+		.pipe(gulp.dest('./release/public/css'))
 		.pipe(rev.manifest())
+		.pipe(rename('css-manifest.json'))
 		.pipe(gulp.dest('./release/rev'));
 
 });
 
-// 处理图片(压缩图片)
+// 处理图片
 gulp.task('image', function () {
 
-	gulp.src('./public/images/**/*')
+	return gulp.src(['./public/images/**/*', './uploads/*'], {base: './'})
 		.pipe(imagemin())
-		.pipe(gulp.dest('./release/public/images'));
-
-});
-
-// 压缩JS
-gulp.task('js', function () {
-
-	gulp.src('./scripts/*.js')
-		.pipe(concat('all.js'))
-		.pipe(uglify())
+		.pipe(rev())
 		.pipe(gulp.dest('./release'))
-});
-
-// 压缩html
-gulp.task('html', function () {
-
-	gulp.src(['./index.html', './views/*.html'], {base: './'})
-		.pipe(htmlmin({collapseWhitespace: true, removeComments: true, minifyJS: true}))
-		.pipe(gulp.dest('./release'));
+		.pipe(rev.manifest())
+		.pipe(rename('image-manifest.json'))
+		.pipe(gulp.dest('./release/rev'));
 
 });
 
-// 替换操作
-gulp.task('rev', function () {
-
-	gulp.src(['./release/rev/*.json', './release/**/*.html'], {base: './release'})
-		.pipe(revCollector())
-		.pipe(gulp.dest('./release'));
-});
-
-
-
-// 
+// 处理js
 gulp.task('useref', function () {
 
-	gulp.src('./index.html')
+	return gulp.src('./index.html')
 		.pipe(useref())
 		.pipe(gulpif('*.js', uglify()))
+		.pipe(gulpif('*.js', rev()))
+		.pipe(gulp.dest('./release'))
+		.pipe(rev.manifest())
+		.pipe(rename('js-manifest.json'))
+		.pipe(gulp.dest('./release/rev'));
+
+});
+
+// 其它
+gulp.task('other', function () {
+
+	return gulp.src(['./api/*', './public/fonts/*', './public/libs/*', './views/*.html'], {base: './'})
 		.pipe(gulp.dest('./release'));
 
-})
+});
+
+// 替换
+gulp.task('rev', ['css', 'image', 'useref'], function () {
+
+	gulp.src(['./release/rev/*.json', './release/index.html'])
+		.pipe(revCollector())
+		.pipe(gulp.dest('./release'));
+
+});
+//[]依赖
+//gulp 默认执行
+gulp.task('default', ['rev', 'other']);
+
+// gulp.task('default', function () {
+// 	console.log('默认');
+// })
+
+// gulp.task('demo', ['css', 'image'], function () {
+// 	console.log(11);
+// });
